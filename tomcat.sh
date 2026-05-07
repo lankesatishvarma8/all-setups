@@ -1,20 +1,52 @@
-yum install java-17-amazon-corretto -y
+# Install Java
+sudo yum install java-17-amazon-corretto -y
 
-# Use stable version from archive (no 404)
+# Go to /opt
+cd /opt
+
+# Tomcat Version
 VERSION=9.0.82
 
-wget https://archive.apache.org/dist/tomcat/tomcat-9/v$VERSION/bin/apache-tomcat-$VERSION.tar.gz
+# Download Tomcat
+sudo wget https://archive.apache.org/dist/tomcat/tomcat-9/v$VERSION/bin/apache-tomcat-$VERSION.tar.gz
 
-tar -zxvf apache-tomcat-$VERSION.tar.gz
+# Extract
+sudo tar -zxvf apache-tomcat-$VERSION.tar.gz
 
-# Add roles & user (SAFE way)
-sed -i '/<\/tomcat-users>/i \
-<role rolename="manager-gui"/>\
-<role rolename="manager-script"/>\
-<user username="tomcat" password="admin@123" roles="manager-gui,manager-script"/>' apache-tomcat-$VERSION/conf/tomcat-users.xml
+# Rename folder
+sudo mv apache-tomcat-$VERSION tomcat
 
-# Remove remote access restriction
-sed -i 's/<Valve className="org.apache.catalina.valves.RemoteAddrValve".*\/>//' apache-tomcat-$VERSION/webapps/manager/META-INF/context.xml
+# Add Tomcat users and roles
+sudo tee /opt/tomcat/conf/tomcat-users.xml > /dev/null <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<tomcat-users>
+
+<role rolename="manager-gui"/>
+<role rolename="manager-script"/>
+<role rolename="admin-gui"/>
+
+<user username="tomcat" password="admin@123" roles="manager-gui,manager-script,admin-gui"/>
+
+</tomcat-users>
+EOF
+
+# Remove Manager remote access restriction
+sudo tee /opt/tomcat/webapps/manager/META-INF/context.xml > /dev/null <<EOF
+<Context antiResourceLocking="false" privileged="true">
+</Context>
+EOF
+
+# Remove Host Manager remote access restriction
+sudo tee /opt/tomcat/webapps/host-manager/META-INF/context.xml > /dev/null <<EOF
+<Context antiResourceLocking="false" privileged="true">
+</Context>
+EOF
+
+# Give permissions
+sudo chmod +x /opt/tomcat/bin/*.sh
 
 # Start Tomcat
-sh apache-tomcat-$VERSION/bin/startup.sh
+sudo /opt/tomcat/bin/startup.sh
+
+# Check Tomcat
+ps -ef | grep tomcat
